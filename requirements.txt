@@ -1,0 +1,14 @@
+streamlit
+langchain
+langchain-groq
+langchain-community
+langchain-huggingface
+faiss-cpu
+rank_bm25
+pdfplumber
+python-dotenv
+ragas
+groq
+sentence-transformers
+pypdf
+pymupdf

@@ -1,0 +1,18 @@
+# Environment variables
+.env
+
+# Virtual environments
+venv/
+venvproj/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Vector DB / artifacts
+*.faiss
+
+#PDF
+data/company_policy.pdf
+
+debug.py
