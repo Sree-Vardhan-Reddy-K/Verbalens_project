@@ -62,7 +62,7 @@ if st.session_state.current_chat_id is None:
 else:
     current_messages = st.session_state.chat_sessions[st.session_state.current_chat_id]
     
-    # --- FEATURE: SUGGESTED QUESTIONS (Only for empty chats) ---
+    # --- FEATURE: SUGGESTED QUESTIONS (for empty chats) ---
     if len(current_messages) == 0:
         st.title("How can I help you today?")
         cols = st.columns(3)

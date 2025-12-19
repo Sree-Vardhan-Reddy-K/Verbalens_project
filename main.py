@@ -20,17 +20,17 @@ def prepare_knowledge_base(pdf_path):
     loader = PyMuPDFLoader(pdf_path)
     documents = loader.load()
     for doc in documents:
-        # 1. Remove repetitive underscores (3 or more)
+        # 1. Removing repetitive underscores (3 or more)
         doc.page_content = re.sub(r'_{3,}', '', doc.page_content)
-        # 2. Remove repetitive dashes or dots (3 or more)
+        # 2. Removing repetitive dashes or dots (3 or more)
         doc.page_content = re.sub(r'[-.]{3,}', '', doc.page_content)
-        # 3. Optional: Collapse multiple newlines/spaces for cleaner chunks
+        # 3. Collapsing multiple newlines/spaces for cleaner chunks
         doc.page_content = re.sub(r'\n{3,}', '\n\n', doc.page_content)
         
         doc.page_content = re.sub(r'[^\x20-\x7E\s\u0900-\u097F]', '', doc.page_content)
         doc.page_content = re.sub(r' +', ' ', doc.page_content)
         doc.page_content = doc.page_content.strip()
-    # Keeping your split settings
+    # Keeping split settings
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1200, 
         chunk_overlap=200,
@@ -63,17 +63,17 @@ def get_rag_response(prompt, retriever):
     for doc in retrieved_docs:
         content = doc.page_content.strip()
         
-        # A: Skip if it contains long strings of underscores (e.g., _______)
+        # A: Skipping if it contains long strings of underscores (e.g., _______)
         if re.search(r'_{3,}', content): 
             continue
             
-        # B: Skip if the chunk has too many non-alphabetic characters
+        # B: Skipping if the chunk has too many non-alphabetic characters
         # (If less than 40% of the chunk is actual letters/numbers, it's likely a table border or form)
         alphanumeric_chars = sum(c.isalnum() for c in content)
         if len(content) > 0 and (alphanumeric_chars / len(content)) < 0.4:
             continue
 
-        # C: Skip very short noise chunks (headers/footers)
+        # C: Skipping very short noise chunks (headers/footers)
         if len(content) < 60:
             continue
 
