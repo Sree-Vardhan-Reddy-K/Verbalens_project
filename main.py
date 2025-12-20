@@ -16,30 +16,38 @@ load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 @st.cache_resource 
-def prepare_knowledge_base(pdf_path):
-    loader = PyMuPDFLoader(pdf_path)
-    documents = loader.load()
-    for doc in documents:
-        # 1. Removing repetitive underscores (3 or more)
-        doc.page_content = re.sub(r'_{3,}', '', doc.page_content)
-        # 2. Removing repetitive dashes or dots (3 or more)
-        doc.page_content = re.sub(r'[-.]{3,}', '', doc.page_content)
-        # 3. Collapsing multiple newlines/spaces for cleaner chunks
-        doc.page_content = re.sub(r'\n{3,}', '\n\n', doc.page_content)
+def prepare_knowledge_base(file_paths):
+    #file_paths is a LIST
+    all_documents = []
+    
+    for path in file_paths:
+        # Load each PDF in the list
+        loader = PyMuPDFLoader(path)
+        documents = loader.load()
         
-        doc.page_content = re.sub(r'[^\x20-\x7E\s\u0900-\u097F]', '', doc.page_content)
-        doc.page_content = re.sub(r' +', ' ', doc.page_content)
-        doc.page_content = doc.page_content.strip()
-    # Keeping split settings
+        # Applying your existing cleaning logic to each document
+        for doc in documents:
+            doc.page_content = re.sub(r'_{3,}', '', doc.page_content)
+            doc.page_content = re.sub(r'[-.]{3,}', '', doc.page_content)
+            doc.page_content = re.sub(r'\n{3,}', '\n\n', doc.page_content)
+            doc.page_content = re.sub(r'[^\x20-\x7E\s\u0900-\u097F]', '', doc.page_content)
+            doc.page_content = re.sub(r' +', ' ', doc.page_content)
+            doc.page_content = doc.page_content.strip()
+        
+        all_documents.extend(documents)
+
+    # Keeping your split settings
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1200, 
         chunk_overlap=200,
         add_start_index=True 
     )
-    splits = text_splitter.split_documents(documents)
+    splits = text_splitter.split_documents(all_documents) # Use the combined list
     
+    # Multilingual Embeddings
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
     
+    # Store everything in one FAISS index
     vectorstore = FAISS.from_documents(splits, embeddings)
     
     # 2. ENHANCED RETRIEVER
@@ -53,6 +61,8 @@ def prepare_knowledge_base(pdf_path):
         weights=[0.4, 0.6] 
     )
     return ensemble_retriever
+
+
 
 # 3. GENERATION LOGIC
 def get_rag_response(prompt, retriever):

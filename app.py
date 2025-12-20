@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import uuid
+import tempfile 
 from main import prepare_knowledge_base, get_rag_response, generate_chat_title
 
 data_path = "data/company_policy.pdf"
@@ -45,16 +46,49 @@ if st.sidebar.button("🗑️ Clear All History", use_container_width=True):
     st.session_state.titles = {}
     st.session_state.current_chat_id = None
     st.rerun()
-
+#--------------------------------------------------------------------
 # 4. KNOWLEDGE BASE LOADING
-if os.path.exists(data_path):
-    if "retriever" not in st.session_state:
-        with st.sidebar.status("Analyzing Document..."):
-            st.session_state.retriever = prepare_knowledge_base(data_path)
-    st.sidebar.success("Knowledge Base Loaded! ✅")
-else:
-    st.sidebar.error("Error: company_policy.pdf not found.")
 
+with st.sidebar:
+    st.divider()
+    st.subheader("📁 Knowledge Base Setup")
+    
+    # STEP 1 & 3: Multi-PDF Uploader
+    uploaded_files = st.file_uploader(
+        "Upload Policy PDFs,if nothing to upload, click on initialise to use default data", 
+        type="pdf", 
+        accept_multiple_files=True
+    )
+
+    if st.button("Initialize / Sync Documents", use_container_width=True):
+        with st.status("Processing Documents...") as status:
+            file_paths = []
+            
+            # STEP 1 & 3: If user uploaded files, save to temp location
+            if uploaded_files:
+                st.write(f"Saving {len(uploaded_files)} uploaded files...")
+                for uploaded_file in uploaded_files:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                        tmp.write(uploaded_file.getvalue())
+                        file_paths.append(tmp.name)
+                st.session_state.retriever = prepare_knowledge_base(file_paths)
+                st.success("Custom PDFs loaded successfully!")
+                
+            # STEP 2: Fallback to internal if uploader is empty
+            else:
+                if os.path.exists(data_path):
+                    st.write("No files uploaded. Using internal policy...")
+                    file_paths = [data_path]
+                    st.session_state.retriever = prepare_knowledge_base(file_paths)
+                    st.info("Default knowledge base active.")
+                else:
+                    st.error("Fallback PDF not found. Please upload a file.")
+            
+            status.update(label="System Ready!", state="complete")
+
+
+
+#------------------------------------------------------------------------
 # 5. MAIN CHAT AREA
 if st.session_state.current_chat_id is None:
     st.title("Welcome to VerbaLens")
@@ -66,7 +100,7 @@ else:
     if len(current_messages) == 0:
         st.title("How can I help you today?")
         cols = st.columns(3)
-        suggestions = ["What is the Leave Policy?", "Cab Service Rules", "Code of Conduct"]
+        suggestions = ["explain recruitment policy?", "Tell me about appointment rules", "Code of Conduct in the campus?"]
         for i, hint in enumerate(suggestions):
             if cols[i].button(hint, use_container_width=True):
                 st.session_state.pending_prompt = hint
