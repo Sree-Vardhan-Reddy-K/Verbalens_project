@@ -16,3 +16,6 @@ __pycache__/
 data/company_policy.pdf
 
 debug.py
+
+#temporary runtime data
+temp_pdf_store/

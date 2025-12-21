@@ -65,12 +65,22 @@ with st.sidebar:
             file_paths = []
             
             # STEP 1 & 3: If user uploaded files, save to temp location
+            # Save to a local folder instead of using random temp names
             if uploaded_files:
                 st.write(f"Saving {len(uploaded_files)} uploaded files...")
+                
+                # Create a physical folder to preserve original names
+                upload_dir = "temp_pdf_store"
+                if not os.path.exists(upload_dir):
+                    os.makedirs(upload_dir)
+                
                 for uploaded_file in uploaded_files:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                        tmp.write(uploaded_file.getvalue())
-                        file_paths.append(tmp.name)
+                    # Use the actual filename from the uploader
+                    file_path = os.path.join(upload_dir, uploaded_file.name)
+                    with open(file_path, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
+                    file_paths.append(file_path)
+                
                 st.session_state.retriever = prepare_knowledge_base(file_paths)
                 st.success("Custom PDFs loaded successfully!")
                 
@@ -109,16 +119,28 @@ else:
         st.title("Document Intelligence")
 
     # DISPLAY HISTORY
-    for message in current_messages:
+    for i, message in enumerate(current_messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
             
-            # Show sources if they are present
-            if message["role"] == "assistant" and message.get("sources"):
-                with st.expander("View Source Evidence"):
-                    for i, doc in enumerate(message["sources"]):
-                        st.write(f"**Source {i+1} (Page {doc.metadata.get('page', 'N/A')}):**")
-                        st.info(doc.page_content)
+            if message["role"] == "assistant":
+                msg_sources = message.get("sources", [])
+                
+                if msg_sources and len(msg_sources) > 0:
+                    with st.expander("View Source Evidence"):
+                        for j, doc in enumerate(msg_sources):
+                            # NEW: Extract filename from metadata
+                            full_path = doc.metadata.get('source', 'Unknown')
+                            file_name = os.path.basename(full_path)
+                            page_num = doc.metadata.get('page', 'N/A')
+                            
+                            # NEW: Display distinct document names
+                            st.write(f"**Source {j+1} | File: `{file_name}` (Page {page_num})**")
+                            st.info(doc.page_content)
+                            if j < len(msg_sources) - 1:
+                                st.divider() # Visual separation between chunks
+                else:
+                    st.caption("No relevant documents found for this response.")
 
     # CHAT INPUT PROCESSING
     prompt = st.chat_input("Ask about the policy:")
@@ -128,10 +150,13 @@ else:
     if prompt:
         is_first_message = (len(current_messages) == 0)
         
-        # 1. Add user message
+        # 1. Clear any old source data from the current script run
+        sources = [] 
+        
+        # 2. Add user message to history
         current_messages.append({"role": "user", "content": prompt})
         
-        # 2. Update Sidebar Title if first message
+        # Update Sidebar Title if needed
         if is_first_message:
             st.session_state.titles[st.session_state.current_chat_id] = generate_chat_title(prompt)
 
@@ -143,20 +168,32 @@ else:
             with st.spinner("Consulting Manual..."):
                 try:
                     answer, sources = get_rag_response(prompt, st.session_state.retriever)
-                    
                     st.markdown(answer)
-                    with st.expander("View Source Evidence"):
-                        for i, doc in enumerate(sources):
-                            st.write(f"**Source {i+1} (Page {doc.metadata.get('page', 'N/A')}):**")
-                            st.info(doc.page_content)
+                    
+                    # 4. CONDITIONAL RENDERING: Separate sources by PDF
+                    if sources and len(sources) > 0:
+                        with st.expander("View Source Evidence"):
+                            for i, doc in enumerate(sources):
+                                # Clearer labeling per document
+                                full_path = doc.metadata.get('source', 'Unknown')
+                                file_name = os.path.basename(full_path)
+                                page_num = doc.metadata.get('page', 'N/A')
+                                
+                                st.write(f"**Source {i+1} | File: `{file_name}` (Page {page_num})**")
+                                st.info(doc.page_content)
+                                if i < len(sources) - 1:
+                                    st.divider()
+                    else:
+                        st.caption("No relevant documents from the knowledge base were used for this response.")
 
+                    # 5. Save to history
                     current_messages.append({
                         "role": "assistant", 
                         "content": answer, 
                         "sources": sources
                     })
                     
-                    if is_first_message:
-                        st.rerun()
+                    st.rerun()
+
                 except Exception as e:
                     st.error(f"Error: {e}")
