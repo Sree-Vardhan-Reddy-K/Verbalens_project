@@ -6,10 +6,10 @@ from main import prepare_knowledge_base, get_rag_response, generate_chat_title
 
 data_path = "data/company_policy.pdf"
 
-# 1. PAGE CONFIG
+# PAGE CONFIG
 st.set_page_config(page_title="VerbaLens: Enterprise RAG", layout="wide")
 
-# 2. INITIALIZE GLOBAL STATE
+# INITIALIZE GLOBAL STATE
 if "chat_sessions" not in st.session_state:
     st.session_state.chat_sessions = {}
 if "titles" not in st.session_state:
@@ -17,7 +17,7 @@ if "titles" not in st.session_state:
 if "current_chat_id" not in st.session_state:
     st.session_state.current_chat_id = None
 
-# 3. SIDEBAR: CHAT MANAGEMENT
+# SIDEBAR: CHAT MANAGEMENT
 st.sidebar.title("💬 VerbaLens AI")
 
 if st.sidebar.button("➕ New Chat", use_container_width=True):
@@ -41,19 +41,19 @@ for chat_id in reversed(list(st.session_state.chat_sessions.keys())):
 
 st.sidebar.divider()
 
-if st.sidebar.button("🗑️ Clear All History", use_container_width=True):
+if st.sidebar.button("Clear All History 🗑️ ", use_container_width=True):
     st.session_state.chat_sessions = {}
     st.session_state.titles = {}
     st.session_state.current_chat_id = None
     st.rerun()
 #--------------------------------------------------------------------
-# 4. KNOWLEDGE BASE LOADING
+# KNOWLEDGE BASE LOADING
 
 with st.sidebar:
     st.divider()
     st.subheader("📁 Knowledge Base Setup")
     
-    # STEP 1 & 3: Multi-PDF Uploader
+    # Multi-PDF Uploader
     uploaded_files = st.file_uploader(
         "Upload Policy PDFs,if nothing to upload, click on initialise to use default data", 
         type="pdf", 
@@ -64,7 +64,7 @@ with st.sidebar:
         with st.status("Processing Documents...") as status:
             file_paths = []
             
-            # STEP 1 & 3: If user uploaded files, save to temp location
+            # If user uploaded files, save to temp location
             # Save to a local folder instead of using random temp names
             if uploaded_files:
                 st.write(f"Saving {len(uploaded_files)} uploaded files...")
@@ -84,7 +84,7 @@ with st.sidebar:
                 st.session_state.retriever = prepare_knowledge_base(file_paths)
                 st.success("Custom PDFs loaded successfully!")
                 
-            # STEP 2: Fallback to internal if uploader is empty
+            # Fallback to internal if uploader is empty
             else:
                 if os.path.exists(data_path):
                     st.write("No files uploaded. Using internal policy...")
@@ -99,18 +99,18 @@ with st.sidebar:
 
 
 #------------------------------------------------------------------------
-# 5. MAIN CHAT AREA
+# MAIN CHAT AREA
 if st.session_state.current_chat_id is None:
     st.title("Welcome to VerbaLens")
     st.info("👋 Select an existing chat or click 'New Chat' to begin.")
 else:
     current_messages = st.session_state.chat_sessions[st.session_state.current_chat_id]
     
-    # --- FEATURE: SUGGESTED QUESTIONS (for empty chats) ---
+    # SUGGESTED QUESTIONS (for empty chats) ---
     if len(current_messages) == 0:
         st.title("How can I help you today?")
         cols = st.columns(3)
-        suggestions = ["explain recruitment policy?", "Tell me about appointment rules", "Code of Conduct in the campus?"]
+        suggestions = ["Explain leave policy?", "Tell me about appointment rules", "Promotion policy?"]
         for i, hint in enumerate(suggestions):
             if cols[i].button(hint, use_container_width=True):
                 st.session_state.pending_prompt = hint
@@ -136,7 +136,11 @@ else:
                             
                             # NEW: Display distinct document names
                             st.write(f"**Source {j+1} | File: `{file_name}` (Page {page_num})**")
-                            st.info(doc.page_content)
+                            st.markdown(f"""
+                                    <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #6c757d; font-size: 14px; line-height: 1.6;">
+                                        {doc.page_content.strip().replace('\n', ' ')}
+                                    </div>
+                                    """, unsafe_allow_html=True)
                             if j < len(msg_sources) - 1:
                                 st.divider() # Visual separation between chunks
                 else:
@@ -150,10 +154,10 @@ else:
     if prompt:
         is_first_message = (len(current_messages) == 0)
         
-        # 1. Clear any old source data from the current script run
+        #Clear any old source data from the current script run
         sources = [] 
         
-        # 2. Add user message to history
+        # Add user message to history
         current_messages.append({"role": "user", "content": prompt})
         
         # Update Sidebar Title if needed
@@ -163,14 +167,14 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # 3. Generate Assistant Response
+        #Generate Assistant Response
         with st.chat_message("assistant"):
             with st.spinner("Consulting Manual..."):
                 try:
                     answer, sources = get_rag_response(prompt, st.session_state.retriever)
                     st.markdown(answer)
                     
-                    # 4. CONDITIONAL RENDERING: Separate sources by PDF
+                    #CONDITIONAL RENDERING: Separate sources by PDF
                     if sources and len(sources) > 0:
                         with st.expander("View Source Evidence"):
                             for i, doc in enumerate(sources):
@@ -180,13 +184,17 @@ else:
                                 page_num = doc.metadata.get('page', 'N/A')
                                 
                                 st.write(f"**Source {i+1} | File: `{file_name}` (Page {page_num})**")
-                                st.info(doc.page_content)
+                                st.markdown(f"""
+                                            <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #007bff; font-size: 14px; line-height: 1.6;">
+                                                {doc.page_content.strip().replace('\n', ' ')}
+                                            </div>
+                                            """, unsafe_allow_html=True)
                                 if i < len(sources) - 1:
                                     st.divider()
                     else:
                         st.caption("No relevant documents from the knowledge base were used for this response.")
 
-                    # 5. Save to history
+                    #Save to history
                     current_messages.append({
                         "role": "assistant", 
                         "content": answer, 

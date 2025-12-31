@@ -15,7 +15,7 @@ __pycache__/
 #PDF
 data/company_policy.pdf
 
-debug.py
-
 #temporary runtime data
 temp_pdf_store/
+
+*.csv
