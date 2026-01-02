@@ -23,9 +23,31 @@ reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 #=====================================================
 #KNOWLEDGE BASE PREPARATION
 @st.cache_resource
-def prepare_knowledge_base(file_paths):
+def prepare_knowledge_base(file_input):
     all_documents = []
+    ############
+    if isinstance(file_input, str):
+        if os.path.isdir(file_input):
+            file_paths = [
+                os.path.join(file_input, f)
+                for f in os.listdir(file_input)
+                if f.lower().endswith(".pdf")
+            ]
+        elif os.path.isfile(file_input) and file_input.lower().endswith(".pdf"):
+            file_paths = [file_input]
+        else:
+            raise ValueError(f"Invalid PDF path: {file_input}")
 
+    elif isinstance(file_input, list):
+        file_paths = file_input
+
+    else:
+        raise ValueError("file_input must be a path or list of paths")
+
+    if not file_paths:
+        raise ValueError("No PDF files found")
+    
+    ##############
     for path in file_paths:
         loader = PyMuPDFLoader(path)
         documents = loader.load()

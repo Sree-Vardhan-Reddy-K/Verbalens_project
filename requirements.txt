@@ -12,3 +12,6 @@ groq
 sentence-transformers
 pypdf
 pymupdf
+fastapi
+uvicorn
+pydantic
