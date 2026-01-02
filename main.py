@@ -12,7 +12,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from sentence_transformers import CrossEncoder
 
-#=====================================================
 #INITIAL SETUP
 load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
@@ -20,12 +19,11 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 #Cross-encoder reranker (semantic precision)
 reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
-#=====================================================
 #KNOWLEDGE BASE PREPARATION
 @st.cache_resource
 def prepare_knowledge_base(file_input):
     all_documents = []
-    ############
+    
     if isinstance(file_input, str):
         if os.path.isdir(file_input):
             file_paths = [
@@ -47,7 +45,7 @@ def prepare_knowledge_base(file_input):
     if not file_paths:
         raise ValueError("No PDF files found")
     
-    ##############
+    
     for path in file_paths:
         loader = PyMuPDFLoader(path)
         documents = loader.load()
@@ -83,11 +81,9 @@ def prepare_knowledge_base(file_input):
 
     return retriever
 
-#=====================================================
 #RAG RESPONSE
 def get_rag_response(prompt, retriever, eval_mode=False):
 
-    #-------------------------------------------------
     #GUARDRAILS
     if not eval_mode:
         guard_prompt = (
@@ -120,14 +116,12 @@ def get_rag_response(prompt, retriever, eval_mode=False):
                 []
             )
 
-    #-------------------------------------------------
     #DENSE RETRIEVAL
     retrieved_docs = retriever.invoke(prompt)
 
     if not retrieved_docs:
         return "No relevant documentation found for the query.", []
 
-    #-------------------------------------------------
     #CROSS-ENCODER RERANKING
     pairs = [(prompt, d.page_content) for d in retrieved_docs]
     scores = reranker.predict(pairs)
@@ -140,7 +134,6 @@ def get_rag_response(prompt, retriever, eval_mode=False):
 
     reranked_docs = [doc for _, doc in ranked[:4]]
 
-    #-------------------------------------------------
     #QUALITY FILTERING
     valid_docs = []
     for doc in reranked_docs:
@@ -160,7 +153,6 @@ def get_rag_response(prompt, retriever, eval_mode=False):
     if not valid_docs:
         return "No relevant documentation found for the query.", []
 
-    #-------------------------------------------------
     #CONTEXT BUILDING
     context_chunks = []
     for d in valid_docs:
@@ -168,7 +160,6 @@ def get_rag_response(prompt, retriever, eval_mode=False):
 
     context_text = "\n\n---\n\n".join(context_chunks)
 
-    #-------------------------------------------------
     #ANSWER GENERATION
     if eval_mode:
         #EVAL MODE: NO GROUPING, NO FORMATTING
@@ -214,7 +205,6 @@ def get_rag_response(prompt, retriever, eval_mode=False):
 
     answer = response.choices[0].message.content.strip()
 
-    # -------------------------------------------------
     # ANSWER DEDUPLICATION
     lines = answer.split("\n")
     seen = set()
@@ -230,7 +220,6 @@ def get_rag_response(prompt, retriever, eval_mode=False):
 
     return answer, valid_docs
 
-# =====================================================
 # CHAT TITLE GENERATION
 def generate_chat_title(first_prompt):
     try:

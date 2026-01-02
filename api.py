@@ -26,7 +26,7 @@ class QueryResponse(BaseModel):
     answer: str
     sources: list
 
-# Health check (important for EC2)
+# Health check
 @app.get("/health")
 def health():
     return {"status": "ok"}
