@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+venvproj/
+
+# Env & secrets
+.env
+
+# Data / artifacts
+data/
+temp_pdf_store/
+*.csv
+*.faiss
+
+# Git
+.git/
+.gitignore
+
