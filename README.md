@@ -36,9 +36,9 @@ Evaluated, Grounded Response
 ## Evaluation
 System quality is evaluated using **RAGAS**, focusing on correctness and grounding rather than inflated scores.
 Metrics used:
-- Answer Relevancy  
-- Context Precision  
-- Context Recall  
+- Answer Relevancy (avg) : 0.96
+- Context Precision (avg) : 0.75
+- Context Recall (avg) : 0.75
 These metrics ensure answers are supported by retrieved context and reduce hallucinations.
 
 ## Tech Stack
