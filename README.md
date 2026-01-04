@@ -39,7 +39,7 @@ Metrics used:
 - Answer Relevancy (avg) : 0.96
 - Context Precision (avg) : 0.75
 - Context Recall (avg) : 0.75
-These metrics ensure answers are supported by retrieved context and reduce hallucinations.
+- These metrics ensure answers are supported by retrieved context and reduce hallucinations.
 
 ## Tech Stack
 - Language: Python  
