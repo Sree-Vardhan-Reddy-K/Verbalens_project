@@ -65,3 +65,5 @@ http://<EC2_PUBLIC_IP>:8000/docs
 - Deployed on AWS EC2 (Ubuntu)  
 - Uses lazy loading and explicit ingestion to remain stable on low-memory instances
 - **Design choice:** Document ingestion and querying are explicitly separated to avoid runtime failures and ensure stability on constrained infrastructure(AWS EC2 instance).
+## Deployment Notes
+**The public API demo runs on a resource-constrained EC2 instance; large PDF uploads may be limited.(upload pdfs less than 10 pages)**
